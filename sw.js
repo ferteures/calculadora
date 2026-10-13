@@ -1,6 +1,6 @@
 // Service worker: guarda os arquivos do app para funcionar offline.
 // Ao mudar qualquer arquivo do app, aumente o número da versão abaixo.
-const CACHE = "calculadora-v1";
+const CACHE = "calculadora-v2";
 const ARQUIVOS = [
   "./",
   "./index.html",

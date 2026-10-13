@@ -88,6 +88,13 @@
     overflow: hidden;
   }
 
+  .value.msg {
+    font-family: var(--font-body);
+    font-weight: 500;
+    letter-spacing: 0;
+    color: var(--accent);
+  }
+
   .keys {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -162,7 +169,8 @@
 <script>
 (function () {
   var SYM = { "+": "+", "-": "−", "*": "×", "/": "÷" };
-  var s = { cur: "0", prev: null, op: null, fresh: false };
+  var MENSAGEM = "te amo sua linda";
+  var s = { cur: "0", prev: null, op: null, fresh: false, msg: false };
 
   var elValue = document.getElementById("value");
   var elExpr = document.getElementById("expr");
@@ -190,10 +198,11 @@
   }
 
   function render() {
-    var text = fmt(s.cur);
+    var text = s.msg ? MENSAGEM : fmt(s.cur);
     elValue.textContent = text;
+    elValue.classList.toggle("msg", s.msg);
     var len = text.length;
-    var size = len <= 8 ? 56 : len <= 10 ? 46 : len <= 13 ? 36 : 28;
+    var size = s.msg ? 30 : len <= 8 ? 56 : len <= 10 ? 46 : len <= 13 ? 36 : 28;
     elValue.style.fontSize = size + "px";
     var ops = elKeys.querySelectorAll(".op");
     for (var i = 0; i < ops.length; i++) {
@@ -236,6 +245,7 @@
     s.prev = null;
     s.op = null;
     s.fresh = true;
+    s.msg = true;
   }
 
   function pct() {
@@ -256,11 +266,12 @@
   }
 
   function clear() {
-    s = { cur: "0", prev: null, op: null, fresh: false };
+    s = { cur: "0", prev: null, op: null, fresh: false, msg: false };
     setExpr("");
   }
 
   function act(a, v) {
+    if (a !== "eq") s.msg = false;
     if (a === "d") digit(v);
     else if (a === "dot") dot();
     else if (a === "op") op(v);
