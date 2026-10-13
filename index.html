@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1218">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Calculadora">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>html{margin:0;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box;background:#0f1218}body{margin:0}</style>
+<title>Calculadora Noturna</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;500;600&display=swap">
+<style>
+  /* Layout: coluna única centralizada, visor no topo e teclado 4x5 ocupando o resto da tela. */
+  :root {
+    --bg: #0f1218;
+    --surface: #171c25;
+    --key: #222936;
+    --key-hi: #2d3646;
+    --fg: #eef1f6;
+    --muted: #8a94a6;
+    --accent: #ff8f5e;
+    --accent-hi: #ffa57e;
+    --accent-fg: #1b0f08;
+    --font-display: "DM Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --font-body: "Outfit", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color-scheme: dark;
+  }
+
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    padding-inline: 16px;
+    padding-block: 16px;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+  }
+
+  .calc {
+    max-width: 420px;
+    height: 100%;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .display {
+    flex: 1 1 0;
+    min-height: 120px;
+    background: var(--surface);
+    border-radius: 20px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-end;
+    gap: 6px;
+    min-width: 0;
+  }
+  .expr {
+    font-family: var(--font-display);
+    font-size: 15px;
+    color: var(--muted);
+    min-height: 20px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .value {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 56px;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .keys {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .key {
+    appearance: none;
+    border: 0;
+    border-radius: 18px;
+    background: var(--key);
+    color: var(--fg);
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 400;
+    height: clamp(58px, 9.5vh, 76px);
+    cursor: pointer;
+    transition: background 0.12s, transform 0.08s;
+    touch-action: manipulation;
+  }
+  .key:active { background: var(--key-hi); transform: scale(0.96); }
+  .key:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .key.fn { color: var(--accent); background: var(--surface); }
+  .key.fn:active { background: var(--key); }
+  .key.op { background: var(--key-hi); color: var(--accent); font-size: 30px; }
+  .key.op:active { background: var(--accent); color: var(--accent-fg); }
+  .key.op.on { background: var(--accent); color: var(--accent-fg); }
+  .key.eq { background: var(--accent); color: var(--accent-fg); font-size: 30px; }
+  .key.eq:active { background: var(--accent-hi); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .key { transition: none; }
+    .key:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+
+<main class="calc" aria-label="Calculadora">
+  <section class="display" aria-live="polite">
+    <div class="expr" id="expr"></div>
+    <div class="value" id="value">0</div>
+  </section>
+  <section class="keys" id="keys">
+    <button class="key fn" data-a="clear" aria-label="Limpar tudo">AC</button>
+    <button class="key fn" data-a="back" aria-label="Apagar">⌫</button>
+    <button class="key fn" data-a="pct" aria-label="Porcentagem">%</button>
+    <button class="key op" data-a="op" data-v="/" aria-label="Dividir">÷</button>
+
+    <button class="key" data-a="d" data-v="7">7</button>
+    <button class="key" data-a="d" data-v="8">8</button>
+    <button class="key" data-a="d" data-v="9">9</button>
+    <button class="key op" data-a="op" data-v="*" aria-label="Multiplicar">×</button>
+
+    <button class="key" data-a="d" data-v="4">4</button>
+    <button class="key" data-a="d" data-v="5">5</button>
+    <button class="key" data-a="d" data-v="6">6</button>
+    <button class="key op" data-a="op" data-v="-" aria-label="Subtrair">−</button>
+
+    <button class="key" data-a="d" data-v="1">1</button>
+    <button class="key" data-a="d" data-v="2">2</button>
+    <button class="key" data-a="d" data-v="3">3</button>
+    <button class="key op" data-a="op" data-v="+" aria-label="Somar">+</button>
+
+    <button class="key" data-a="sign" aria-label="Trocar sinal">±</button>
+    <button class="key" data-a="d" data-v="0">0</button>
+    <button class="key" data-a="dot" aria-label="Vírgula">,</button>
+    <button class="key eq" data-a="eq" aria-label="Igual">=</button>
+  </section>
+</main>
+
+<script>
+(function () {
+  var SYM = { "+": "+", "-": "−", "*": "×", "/": "÷" };
+  var s = { cur: "0", prev: null, op: null, fresh: false };
+
+  var elValue = document.getElementById("value");
+  var elExpr = document.getElementById("expr");
+  var elKeys = document.getElementById("keys");
+
+  function fmt(str) {
+    if (str === "Erro") return str;
+    if (/e/i.test(str)) return str.replace(".", ",");
+    var neg = str.charAt(0) === "-";
+    if (neg) str = str.slice(1);
+    var parts = str.split(".");
+    var int = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    var out = parts.length > 1 ? int + "," + parts[1] : int;
+    return (neg ? "-" : "") + out;
+  }
+
+  function calc(a, b, op) {
+    var r;
+    if (op === "+") r = a + b;
+    else if (op === "-") r = a - b;
+    else if (op === "*") r = a * b;
+    else if (op === "/") { if (b === 0) return "Erro"; r = a / b; }
+    if (!isFinite(r)) return "Erro";
+    return String(Number(r.toPrecision(12)));
+  }
+
+  function render() {
+    var text = fmt(s.cur);
+    elValue.textContent = text;
+    var len = text.length;
+    var size = len <= 8 ? 56 : len <= 10 ? 46 : len <= 13 ? 36 : 28;
+    elValue.style.fontSize = size + "px";
+    var ops = elKeys.querySelectorAll(".op");
+    for (var i = 0; i < ops.length; i++) {
+      ops[i].classList.toggle("on", s.op !== null && s.fresh && ops[i].getAttribute("data-v") === s.op);
+    }
+  }
+
+  function setExpr(t) { elExpr.textContent = t || ""; }
+
+  function digit(d) {
+    if (s.fresh || s.cur === "Erro") { s.cur = d; s.fresh = false; }
+    else if (s.cur === "0") s.cur = d;
+    else if (s.cur.replace(/[-.]/g, "").length < 15) s.cur += d;
+  }
+
+  function dot() {
+    if (s.fresh || s.cur === "Erro") { s.cur = "0."; s.fresh = false; }
+    else if (s.cur.indexOf(".") === -1) s.cur += ".";
+  }
+
+  function op(o) {
+    if (s.cur === "Erro") return;
+    if (s.op !== null && !s.fresh) {
+      var r = calc(parseFloat(s.prev), parseFloat(s.cur), s.op);
+      s.cur = r;
+      if (r === "Erro") { s.prev = null; s.op = null; s.fresh = true; setExpr(""); return; }
+    }
+    s.prev = s.cur;
+    s.op = o;
+    s.fresh = true;
+    setExpr(fmt(s.prev) + " " + SYM[o]);
+  }
+
+  function eq() {
+    if (s.op === null || s.cur === "Erro") return;
+    var a = parseFloat(s.prev), b = parseFloat(s.cur);
+    var r = calc(a, b, s.op);
+    setExpr(fmt(s.prev) + " " + SYM[s.op] + " " + fmt(s.cur) + " =");
+    s.cur = r;
+    s.prev = null;
+    s.op = null;
+    s.fresh = true;
+  }
+
+  function pct() {
+    if (s.cur === "Erro") return;
+    s.cur = String(Number((parseFloat(s.cur) / 100).toPrecision(12)));
+    s.fresh = true;
+  }
+
+  function sign() {
+    if (s.cur === "Erro" || s.cur === "0") return;
+    s.cur = s.cur.charAt(0) === "-" ? s.cur.slice(1) : "-" + s.cur;
+  }
+
+  function back() {
+    if (s.fresh || s.cur === "Erro") return;
+    s.cur = s.cur.slice(0, -1);
+    if (s.cur === "" || s.cur === "-") s.cur = "0";
+  }
+
+  function clear() {
+    s = { cur: "0", prev: null, op: null, fresh: false };
+    setExpr("");
+  }
+
+  function act(a, v) {
+    if (a === "d") digit(v);
+    else if (a === "dot") dot();
+    else if (a === "op") op(v);
+    else if (a === "eq") eq();
+    else if (a === "pct") pct();
+    else if (a === "sign") sign();
+    else if (a === "back") back();
+    else if (a === "clear") clear();
+    render();
+  }
+
+  elKeys.addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest(".key") : null;
+    if (!b) return;
+    try { if (navigator.vibrate) navigator.vibrate(8); } catch (err) {}
+    act(b.getAttribute("data-a"), b.getAttribute("data-v"));
+  });
+
+  document.addEventListener("keydown", function (e) {
+    var k = e.key;
+    if (/^[0-9]$/.test(k)) act("d", k);
+    else if (k === "." || k === ",") act("dot");
+    else if (k === "+" || k === "-" || k === "*" || k === "/") { e.preventDefault(); act("op", k); }
+    else if (k === "x" || k === "X") act("op", "*");
+    else if (k === "Enter" || k === "=") { e.preventDefault(); act("eq"); }
+    else if (k === "Backspace") act("back");
+    else if (k === "Escape") act("clear");
+    else if (k === "%") act("pct");
+  });
+
+  render();
+})();
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  });
+}
+</script>
+</body>
+</html>
